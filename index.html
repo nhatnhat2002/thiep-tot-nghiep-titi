@@ -75,13 +75,26 @@ h2{font-size:clamp(1.6rem,6vw,2.3rem);text-align:center;margin-bottom:28px}
 .tl div{position:relative;background:var(--card);border-radius:20px;padding:12px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
 .tl div:before{content:"";position:absolute;left:-31px;top:18px;width:20px;height:20px;border-radius:50%;background:var(--d);border:3px solid var(--bg)}
 .tl b{font-family:Fredoka,sans-serif}
-.guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:22px}
-.guide-item{background:var(--card);border:2.5px dashed var(--lav);border-radius:24px;padding:18px 20px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start;transition:transform .2s}
+.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.guide-item{background:var(--card);border:2px dashed var(--lav);border-radius:20px;padding:14px 15px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px;transition:transform .2s}
 .guide-item:hover{transform:translateY(-4px)}
-.guide-ic{width:46px;height:46px;border-radius:16px;background:var(--c,var(--pink));display:flex;align-items:center;justify-content:center;font-size:1.55rem;flex-shrink:0;box-shadow:0 4px 10px rgba(90,74,106,.1)}
-.guide-item h3{font-size:1.1rem;margin:0 0 4px}
-.guide-item p{margin:0;font-size:.94rem;line-height:1.55;opacity:.92}
+.guide-top{display:flex;align-items:center;gap:9px}
+.guide-ic{width:34px;height:34px;border-radius:11px;background:var(--c,var(--pink));display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0;box-shadow:0 3px 8px rgba(90,74,106,.1)}
+.guide-item h3{font-size:.98rem;margin:0;line-height:1.25}
+.guide-item p{margin:0;font-size:.86rem;line-height:1.45;opacity:.92}
 .guide-item .hl{color:#d9385a;font-weight:800}
+@media (max-width:640px){
+  section{padding:34px 14px}
+  h2{margin-bottom:18px}
+  .guide-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .guide-item{padding:11px 11px;border-radius:16px;gap:5px}
+  .guide-ic{width:28px;height:28px;border-radius:9px;font-size:.98rem}
+  .guide-item h3{font-size:.86rem}
+  .guide-item p{font-size:.78rem;line-height:1.38}
+  .map-box{padding:16px 12px;border-radius:22px}
+  .map-legend{gap:6px 8px;font-size:.78rem}
+  .map-legend span{padding:3px 9px}
+}
 .map-box{background:var(--card);border:3px dashed var(--lav);border-radius:28px;padding:24px 20px;box-shadow:var(--shadow);text-align:center}
 .map-box h3{font-size:1.25rem;margin-bottom:6px}
 .map-sub{margin:0 0 16px;font-size:.92rem;opacity:.8}
@@ -283,12 +296,12 @@ const CFG={
     ["12:00","Giao lưu, nhận lời chúc & khép lại buổi lễ 💐"]
   ],
   guides:[
-    {ic:"🛵",title:"Đi xe công nghệ (2 bánh)",desc:"Đi xe công nghệ thì vào <b class='hl'>cổng 1, 2</b> (khi đi từ Nguyễn Văn Bảo) hoặc <b class='hl'>Cổng 4</b> (khi đi từ Nguyễn Văn Nghi)."},
-    {ic:"🏍️",title:"Đi xe máy",desc:"Đi xe máy thì vào <b class='hl'>cổng 1 và 2</b> (gửi xe tại Nhà xe trung tâm ngay trước tòa E hoặc bãi giữ xe đối diện trường)."},
+    {ic:"🛵",title:"Xe công nghệ (2 bánh)",desc:"Vào <b class='hl'>cổng 1, 2</b> (từ Nguyễn Văn Bảo) hoặc <b class='hl'>Cổng 4</b> (từ Nguyễn Văn Nghi)."},
+    {ic:"🏍️",title:"Đi xe máy",desc:"Vào <b class='hl'>cổng 1 và 2</b> (gửi tại Nhà xe trung tâm trước tòa E hoặc bãi xe đối diện trường)."},
     {ic:"🚗",title:"Đi bằng GrabCar",desc:"Đi bằng GrabCar thì <b class='hl'>ưu tiên Cổng 4</b> (khi đi từ hướng Nguyễn Văn Nghi) nha."},
-    {ic:"📍",title:"Điểm hẹn & Liên hệ đón khách",desc:"Khi tới trường, bạn di chuyển vào khu vực <b class='hl'>giữa tòa E và tòa D</b> rồi gọi điện ra đón nhé:<br>📞 <b>Ti Ti:</b> <a href='tel:0362512837' class='hl' style='text-decoration:none'>0362512837</a><br>📞 <b>Thùy Trang:</b> <a href='tel:0358690412' class='hl' style='text-decoration:none'>0358690412</a>"},
-    {ic:"🍜",title:"Ăn sáng",desc:"Dọc đường Nguyễn Văn Bảo, Nguyễn Văn Nghi và Lê Lợi ngay sát cổng trường có rất nhiều quán phở, bún bò, cơm tấm, bánh mì và căng-tin trường."},
-    {ic:"☕",title:"Uống cà phê & Nghỉ chân",desc:"Nếu đến sớm trong lúc Ti đang làm lễ (07:00 – 09:30), bạn có thể ghé các quán cà phê máy lạnh đối diện cổng trường ngồi nghỉ mát chờ mình nha!"}
+    {ic:"📍",title:"Điểm hẹn & Liên hệ",desc:"Đứng ở <b class='hl'>giữa tòa E và D</b>.<br>📞 <b>Ti Ti:</b> <a href='tel:0362512837' class='hl' style='text-decoration:none'>0362512837</a><br>📞 <b>Trang:</b> <a href='tel:0358690412' class='hl' style='text-decoration:none'>0358690412</a>"},
+    {ic:"🍜",title:"Ăn sáng",desc:"Dọc cổng Nguyễn Văn Bảo, Nguyễn Văn Nghi, Lê Lợi & căng-tin có phở, bún bò, cơm tấm, bánh mì."},
+    {ic:"☕",title:"Cà phê & Nghỉ chân",desc:"Đến sớm lúc Ti làm lễ (07:00–09:30) có thể ghé các quán cafe máy lạnh đối diện cổng ngồi mát nha!"}
   ],
   wishes:[]
 };
@@ -313,7 +326,7 @@ $("#shareBtn").onclick=async e=>{
 };
 const dots=["var(--pink)","var(--blue)","var(--butter)","var(--mint)","var(--lav)"];
 $("#tl").innerHTML=CFG.program.map((p,i)=>`<div style="--d:${dots[i%5]}"><b>${p[0]}</b> – ${p[1]}</div>`).join("");
-$("#guideGrid").innerHTML=(CFG.guides||[]).map((g,i)=>`<div class="guide-item"><div class="guide-ic" style="--c:${dots[i%5]}">${g.ic}</div><div><h3>${g.title}</h3><p>${g.desc}</p></div></div>`).join("");
+$("#guideGrid").innerHTML=(CFG.guides||[]).map((g,i)=>`<div class="guide-item"><div class="guide-top"><div class="guide-ic" style="--c:${dots[i%5]}">${g.ic}</div><h3>${g.title}</h3></div><p>${g.desc}</p></div>`).join("");
 $("#mapGuideBtn").href=CFG.mapUrl;
 
 // Trang đầu tiên: nhập tên khách mời & chuyển sang trang thiệp mời
