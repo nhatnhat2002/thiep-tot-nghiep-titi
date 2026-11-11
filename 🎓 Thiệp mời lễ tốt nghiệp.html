@@ -452,8 +452,10 @@ $("#open").onclick=e=>{
   $("#inviteSec").scrollIntoView({behavior:"smooth"});
 };
 
-// Guestbook
-const WKEY="grad_wishes_v2";
+// Guestbook (Đồng bộ đám mây cho toàn bộ khách truy cập)
+const WKEY="grad_wishes_v2",MYKEY="grad_my_wishes_v2";
+const CLOUD_URL="https://api.restful-api.dev/objects/ff808181a09d98f701a1cab581d70940";
+const NTFY_TOPIC="https://ntfy.sh/titi_graduation_iuh_2026_wishes";
 try{localStorage.removeItem("grad_wishes_v1")}catch(e){}
 const wStyles=[
   {wc:"#FDE2EB",pc:"#FFAFCC",r:"-1.3deg"},
@@ -464,15 +466,36 @@ const wStyles=[
   {wc:"#FCE0EA",pc:"#FFAFCC",r:"0.7deg"}
 ];
 const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+let wishesList=getSavedWishes();
+let deletedIds=new Set();
+
 function getSavedWishes(){
   try{return JSON.parse(localStorage.getItem(WKEY)||"[]")}catch(e){return[]}
 }
 function saveWishes(arr){
+  wishesList=arr;
   try{localStorage.setItem(WKEY,JSON.stringify(arr))}catch(e){}
 }
+function getMyIds(){
+  try{return new Set(JSON.parse(localStorage.getItem(MYKEY)||"[]"))}catch(e){return new Set()}
+}
+function addMyId(id){
+  try{const s=getMyIds();s.add(id);localStorage.setItem(MYKEY,JSON.stringify([...s]))}catch(e){}
+}
+function mergeWishes(lists){
+  const map=new Map();
+  lists.flat().forEach(w=>{
+    if(!w||!w.text)return;
+    const id=w.id||`${w.name}_${w.text}`;
+    if(deletedIds.has(id))return;
+    if(!map.has(id))map.set(id,{id,name:w.name||"Bạn",text:w.text,ts:w.ts||0});
+  });
+  return [...map.values()].sort((a,b)=>(b.ts||0)-(a.ts||0));
+}
+
 function renderWishes(){
-  const saved=getSavedWishes();
-  const all=[...saved.map((w,idx)=>({...w,custom:true,idx})),...(CFG.wishes||[])];
+  const myIds=getMyIds();
+  const all=[...wishesList,...(CFG.wishes||[])];
   $("#wcnt").textContent=all.length;
   if(!all.length){
     $("#gb").innerHTML=`<p style="grid-column:1/-1;text-align:center;opacity:.65;margin:18px 0">Chưa có lời chúc nào được ghim. Hãy là người đầu tiên gửi lời chúc cho Ti Ti nhé! 💖</p>`;
@@ -480,7 +503,8 @@ function renderWishes(){
   }
   $("#gb").innerHTML=all.map((w,i)=>{
     const st=wStyles[i%wStyles.length];
-    const delBtn=w.custom?`<button type="button" class="wish-del" data-del="${w.idx}" title="Xóa lời chúc này" aria-label="Xóa lời chúc">✕</button>`:"";
+    const canDel=w.id&&myIds.has(w.id);
+    const delBtn=canDel?`<button type="button" class="wish-del" data-del="${esc(w.id)}" title="Xóa lời chúc này" aria-label="Xóa lời chúc">✕</button>`:"";
     return `<article class="wish" style="--wc:${st.wc};--pc:${st.pc};--r:${st.r}">
       <span class="pin"></span>${delBtn}
       <p>“${esc(w.text)}”</p>
@@ -490,23 +514,95 @@ function renderWishes(){
     </article>`;
   }).join("");
   $("#gb").querySelectorAll("[data-del]").forEach(btn=>{
-    btn.onclick=()=>{
-      const cur=getSavedWishes();
-      cur.splice(Number(btn.dataset.del),1);
-      saveWishes(cur);
+    btn.onclick=async()=>{
+      const id=btn.dataset.del;
+      deletedIds.add(id);
+      const next=wishesList.filter(x=>x.id!==id);
+      saveWishes(next);
       renderWishes();
+      syncToCloud(next);
+      fetch(NTFY_TOPIC,{method:"POST",body:JSON.stringify({action:"del",id})}).catch(()=>{});
     };
   });
 }
-renderWishes();
 
-$("#pinBtn").onclick=e=>{
+async function syncToCloud(arr){
+  try{
+    await fetch(CLOUD_URL,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({name:"titi_graduation_wishes",data:{wishes:arr,deleted:[...deletedIds]}})
+    });
+  }catch(e){}
+}
+
+async function loadCloudWishes(){
+  let cloudArr=[],ntfyArr=[];
+  try{
+    const r=await fetch(CLOUD_URL,{cache:"no-store"});
+    if(r.ok){
+      const j=await r.json();
+      if(j&&j.data){
+        if(Array.isArray(j.data.deleted))j.data.deleted.forEach(id=>deletedIds.add(id));
+        if(Array.isArray(j.data.wishes))cloudArr=j.data.wishes;
+      }
+    }
+  }catch(e){}
+  try{
+    const r2=await fetch(NTFY_TOPIC+"/json?poll=1&since=all",{cache:"no-store"});
+    if(r2.ok){
+      const txt=await r2.text();
+      txt.trim().split("\n").forEach(line=>{
+        if(!line)return;
+        try{
+          const ev=JSON.parse(line);
+          if(ev.event==="message"&&ev.message){
+            const p=JSON.parse(ev.message);
+            if(p.action==="del"&&p.id)deletedIds.add(p.id);
+            else if(p.action==="add"&&p.wish)ntfyArr.push(p.wish);
+          }
+        }catch(e){}
+      });
+    }
+  }catch(e){}
+  const merged=mergeWishes([cloudArr,ntfyArr,wishesList]);
+  saveWishes(merged);
+  renderWishes();
+  if(merged.length!==cloudArr.length)syncToCloud(merged);
+}
+
+renderWishes();
+loadCloudWishes();
+
+// Lắng nghe lời chúc mới theo thời gian thực (Realtime SSE)
+try{
+  const es=new EventSource(NTFY_TOPIC+"/sse");
+  es.onmessage=e=>{
+    try{
+      const ev=JSON.parse(e.data);
+      if(!ev.message)return;
+      const p=JSON.parse(ev.message);
+      if(p.action==="add"&&p.wish){
+        const merged=mergeWishes([[p.wish],wishesList]);
+        saveWishes(merged);
+        renderWishes();
+      }else if(p.action==="del"&&p.id){
+        deletedIds.add(p.id);
+        saveWishes(wishesList.filter(x=>x.id!==p.id));
+        renderWishes();
+      }
+    }catch(err){}
+  };
+}catch(e){}
+
+$("#pinBtn").onclick=async e=>{
   const w=$("#w").value.trim();
   if(!w){$("#w").focus();$("#w").reportValidity();return}
   const n=currentGuest;
-  const saved=getSavedWishes();
-  saved.unshift({name:n,text:w});
-  saveWishes(saved);
+  const newWish={id:`${Date.now()}-${Math.random().toString(36).slice(2,7)}`,name:n,text:w,ts:Date.now()};
+  addMyId(newWish.id);
+  const merged=mergeWishes([[newWish],wishesList]);
+  saveWishes(merged);
   renderWishes();
   $("#w").value="";
   const t=$("#thanks");
@@ -514,6 +610,8 @@ $("#pinBtn").onclick=e=>{
   t.style.display="block";
   confetti(140,e.clientX,e.clientY);
   setTimeout(()=>$("#guestbook").scrollIntoView({behavior:"smooth",block:"center"}),300);
+  fetch(NTFY_TOPIC,{method:"POST",body:JSON.stringify({action:"add",wish:newWish})}).catch(()=>{});
+  await loadCloudWishes();
 };
 $("#f").onsubmit=e=>e.preventDefault();
 
