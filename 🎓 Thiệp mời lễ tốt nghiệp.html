@@ -328,9 +328,8 @@ const CFG={
   zaloUrl:"https://zalo.me/0362512837", // dán link Zalo của bạn
   igUrl:"https://instagram.com/", // dán link Instagram của bạn
   phone:"tel:0362512837", // số điện thoại của bạn
-  musicFile:"nhac-nen.webm", // file nhạc nền tải từ YouTube
-  musicFallback:"nhac-nen.m4a",
-  ytVideoId:"mYOEgSwPb_A", // ID video YouTube nhạc nền
+  musicFile:"nhac-nen.mp3", // file nhạc nền mới
+  musicFallback:"nhạc.MP3.mpeg", // fallback
   program:[
     ["07:00","Làm lễ 🎓"],
     ["09:30","Đón khách & tập trung tại sân trường 🌸"],
@@ -624,55 +623,25 @@ addEventListener("pointermove",e=>{
   document.body.appendChild(s);setTimeout(()=>s.remove(),800);
 });
 
-// music (từ video YouTube https://www.youtube.com/watch?v=mYOEgSwPb_A)
-let on=false,useYT=false,triedM4a=false,ytPlayer=null,ytReady=false;
+// music (nhạc nền)
+let on=false;
 const bgAudio=new Audio(CFG.musicFile);
 bgAudio.loop=true;
 bgAudio.volume=0.7;
-bgAudio.addEventListener("timeupdate",()=>{if(bgAudio.currentTime>90)bgAudio.currentTime=0});
 bgAudio.addEventListener("error",()=>{
-  if(!triedM4a&&CFG.musicFallback){
-    triedM4a=true;
-    bgAudio.src=CFG.musicFallback;
-    if(on)bgAudio.play().catch(()=>{useYT=true;initYT()});
-  }else{
-    useYT=true;initYT();
+  if(bgAudio.src.indexOf(encodeURI(CFG.musicFallback))===-1&&CFG.musicFallback){
+    bgAudio.src=encodeURI(CFG.musicFallback);
+    if(on)bgAudio.play().catch(()=>{});
   }
 });
-
-function initYT(){
-  if(window.YT||document.getElementById("ytApiScript"))return;
-  const d=document.createElement("div");
-  d.id="ytWrap";
-  d.style.cssText="position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;opacity:0;pointer-events:none";
-  document.body.appendChild(d);
-  const tag=document.createElement("script");
-  tag.id="ytApiScript";
-  tag.src="https://www.youtube.com/iframe_api";
-  document.head.appendChild(tag);
-}
-window.onYouTubeIframeAPIReady=function(){
-  ytPlayer=new YT.Player("ytWrap",{
-    height:"1",width:"1",videoId:CFG.ytVideoId,
-    playerVars:{autoplay:on?1:0,loop:1,playlist:CFG.ytVideoId,controls:0},
-    events:{onReady:()=>{ytReady=true;if(on)ytPlayer.playVideo()}}
-  });
-};
 
 function toggleMusic(forceState){
   on=typeof forceState==="boolean"?forceState:!on;
   $("#mus").textContent=on?"🎵":"🔇";
-  if(!useYT){
-    if(on){
-      bgAudio.play().catch(()=>{useYT=true;initYT()});
-    }else{
-      bgAudio.pause();
-    }
+  if(on){
+    bgAudio.play().catch(()=>{});
   }else{
-    initYT();
-    if(ytReady&&ytPlayer){
-      if(on)ytPlayer.playVideo();else ytPlayer.pauseVideo();
-    }
+    bgAudio.pause();
   }
 }
 $("#mus").onclick=()=>toggleMusic();
